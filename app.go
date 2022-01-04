@@ -226,6 +226,8 @@ func (f *EncodeFactory) Add() error {
 }
 
 func (f *EncodeFactory) Start(title string) error {
+	title = filepath.Base(title)
+
 	if err := f.refresh(); err != nil {
 		return err
 	}
@@ -245,7 +247,7 @@ func (f *EncodeFactory) Start(title string) error {
 }
 
 func (f *EncodeFactory) Finish(title string) error {
-	log.Println("finish:", title)
+	title = filepath.Base(title)
 
 	if err := f.refresh(); err != nil {
 		return err

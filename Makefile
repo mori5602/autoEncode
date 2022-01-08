@@ -34,7 +34,7 @@ build: $(BINARIES)
 
 # 実ビルドタスク
 $(BINARIES): $(GO_FILES) VERSION .git/HEAD
-	$(GO_BUILD) -o $@ $(GO_BUILD_OPTION) $(@:$(BINDIR)/%=$(ROOT_PACKAGE)/cmd/%)
+	$(ENV) $(GO_BUILD) -o $@ $(GO_BUILD_OPTION) $(@:$(BINDIR)/%=$(ROOT_PACKAGE)/cmd/%)
 	cp $@ $@.exe
 
 

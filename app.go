@@ -17,6 +17,7 @@ type EncodeFactory struct {
 	inDir       string
 	outDir      string
 	exeDir      string
+	tmpDir      string
 	profileName string
 	Status      EncodeStatuses
 	hash        string
@@ -61,7 +62,7 @@ func checkDir(dir string) error {
 	return nil
 }
 
-func (f *EncodeFactory) Set(inDir, outDir, exeDir, profile string) error {
+func (f *EncodeFactory) Set(inDir, outDir, tmpDir, exeDir, profile string) error {
 	if err := checkDir(inDir); err != nil {
 		return err
 	}
@@ -76,6 +77,11 @@ func (f *EncodeFactory) Set(inDir, outDir, exeDir, profile string) error {
 		return err
 	}
 	f.exeDir = exeDir
+
+	if err := checkDir(tmpDir); err != nil {
+		return err
+	}
+	f.tmpDir = tmpDir
 
 	f.profileName = profile
 	return nil
@@ -168,7 +174,13 @@ func (f *EncodeFactory) Add() error {
 
 		// amatsukaze登録処理開始
 		log.Println("add title:", record.Name())
-		path := filepath.Join(f.inDir, record.Name())
+		src := filepath.Join(f.inDir, record.Name())
+		dst := filepath.Join(f.tmpDir, record.Name())
+		if err := os.Link(src, dst); err != nil {
+			return err
+		}
+
+		path := dst
 		if err := f.Status.Add(record.Name()); err != nil {
 			log.Printf("%v\n", err)
 		}

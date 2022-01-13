@@ -12,13 +12,14 @@ import (
 )
 
 var (
-	isVersion                      bool
-	inDir, outDir, exeDir, profile string
+	isVersion                              bool
+	inDir, outDir, exeDir, tmpDir, profile string
 )
 
 func init() {
 	flag.StringVar(&inDir, "i", "", "エンコード対象が格納されたフォルダ")
 	flag.StringVar(&outDir, "o", "", "エンコード後のファイルを格納するフォルダ")
+	flag.StringVar(&tmpDir, "t", "", "処理対象ファイルを格納するローカルフォルダ")
 	flag.StringVar(&exeDir, "e", "", "amatsukazeのexeが格納されたフォルダ")
 	flag.StringVar(&profile, "p", "", "amatsukazeで使用するプロファイル名")
 	flag.BoolVar(&isVersion, "v", false, "バージョン表示")
@@ -52,7 +53,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := factory.Set(inDir, outDir, exeDir, profile); err != nil {
+	if err := factory.Set(inDir, outDir, tmpDir, exeDir, profile); err != nil {
 		log.Fatal(err)
 	}
 

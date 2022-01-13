@@ -176,7 +176,7 @@ func (f *EncodeFactory) Add() error {
 		log.Println("add title:", record.Name())
 		src := filepath.Join(f.inDir, record.Name())
 		dst := filepath.Join(f.tmpDir, record.Name())
-		if err := os.Link(src, dst); err != nil {
+		if err := Copy(src, dst); err != nil {
 			return err
 		}
 
@@ -246,7 +246,7 @@ func (f *EncodeFactory) Start(title string) error {
 
 	i, err := f.Status.GetStatus(title)
 	if err != nil {
-		return err
+		return fmt.Errorf("%v:'%v'", err, title)
 	}
 	if i != Added {
 		return fmt.Errorf("wrong status:%v", i)
@@ -267,7 +267,7 @@ func (f *EncodeFactory) Finish(title string) error {
 
 	status, err := f.Status.GetStatus(title)
 	if err != nil {
-		return err
+		return fmt.Errorf("%v:'%v'", err, title)
 	}
 	if status != Started {
 		return fmt.Errorf("wrong status:%v", status)

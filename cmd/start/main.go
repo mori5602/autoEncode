@@ -28,12 +28,17 @@ func main() {
 		log.Fatal("must -f")
 	}
 
+	utf8, err := autoEncode.ToShiftJIS(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	factory, err := autoEncode.NewEncodeFactory()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := factory.Start(name); err != nil {
+	if err := factory.Start(utf8); err != nil {
 		log.Fatal(err)
 	}
 }

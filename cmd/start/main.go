@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"path/filepath"
 )
 
 var (
@@ -28,7 +29,8 @@ func main() {
 		log.Fatal("must -f")
 	}
 
-	utf8, err := autoEncode.ToShiftJIS(name)
+	title := filepath.Base(name)
+	utf8, err := autoEncode.ToShiftJIS(title)
 	if err != nil {
 		log.Fatal(err)
 	}

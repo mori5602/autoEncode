@@ -21,7 +21,7 @@ func init() {
 func main() {
 	flag.Parse()
 	if isVersion {
-		fmt.Printf("%v-%v\n", autoEncode.VERSION, autoEncode.REVISION)
+		fmt.Printf("%v:%v\n", autoEncode.VERSION, autoEncode.REVISION)
 		return
 	}
 
@@ -30,16 +30,12 @@ func main() {
 	}
 
 	title := filepath.Base(name)
-	utf8, err := autoEncode.ToShiftJIS(title)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	factory, err := autoEncode.NewEncodeFactory()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := factory.Finish(utf8); err != nil {
+
+	if err := factory.Finish(title); err != nil {
 		log.Fatal(err)
 	}
 }

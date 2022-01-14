@@ -51,13 +51,13 @@ func checkDir(dir string) error {
 	file, err := os.Stat(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("%v-%v", ErrTargetPathNotFound, dir)
+			return fmt.Errorf("%v:%v", ErrTargetPathNotFound, dir)
 		} else {
-			return fmt.Errorf("%v-%v", ErrException, dir)
+			return fmt.Errorf("%v:%v", ErrException, dir)
 		}
 	}
 	if !file.IsDir() {
-		return fmt.Errorf("%v-%v", ErrTargetIsNotDir, dir)
+		return fmt.Errorf("%v:%v", ErrTargetIsNotDir, dir)
 	}
 	return nil
 }
@@ -92,7 +92,7 @@ func (f *EncodeFactory) refresh() error {
 	_, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil
+			return fmt.Errorf("%v:%v", ErrFileNotFound, path)
 		} else {
 			return fmt.Errorf("%v:%v", ErrException, path)
 		}
@@ -100,16 +100,16 @@ func (f *EncodeFactory) refresh() error {
 
 	hash, err := Hash(path)
 	if err != nil {
-		return err
+		return ErrHashFailed
 	}
 
 	if f.hash != "" && f.hash == hash {
 		return nil
 	}
 
-	err = f.Status.ReadFile(filepath.Join(path))
+	err = f.Status.ReadFile(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("%v:%v", ErrReadFileFaield, path)
 	}
 
 	f.hash, err = Hash(path)
@@ -135,7 +135,7 @@ func (f *EncodeFactory) update() error {
 
 	hash, err := Hash(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("%v:%v", ErrHashFailed, path)
 	}
 
 	f.hash = hash
@@ -146,10 +146,9 @@ func (f *EncodeFactory) Add() error {
 	log.Println("Add title check start")
 	info, err := os.ReadDir(f.inDir)
 	if err != nil {
-		return fmt.Errorf("failed ReadDir:%v", f.inDir)
+		return fmt.Errorf("%v:%v", ErrReadDirFailed, f.inDir)
 	}
 
-	isUpdate := false
 	for _, record := range info {
 		// ディレクトリは処理対象外
 		if record.IsDir() {
@@ -172,17 +171,18 @@ func (f *EncodeFactory) Add() error {
 			continue
 		}
 
-		// amatsukaze登録処理開始
+		// 録画ファイルをローカルディレクトリにコピー
 		log.Println("add title:", record.Name())
 		src := filepath.Join(f.inDir, record.Name())
 		dst := filepath.Join(f.tmpDir, record.Name())
 		if err := Copy(src, dst); err != nil {
-			return err
+			return fmt.Errorf("%v:%v", ErrCopyFailed, record.Name())
 		}
 
+		// amatsukaze登録処理開始
 		path := dst
 		if err := f.Status.Add(record.Name()); err != nil {
-			log.Printf("%v\n", err)
+			log.Printf("[WARN]Add failed:%v ...skiped\n", err)
 		}
 		if err := f.update(); err != nil {
 			return err
@@ -222,19 +222,15 @@ func (f *EncodeFactory) Add() error {
 		}
 
 		if err := f.Status.Set(record.Name(), Added); err != nil {
-			return err
+			return fmt.Errorf("%v:%v:%v", ErrSetFailed, err, record.Name())
 		}
 		if err := f.update(); err != nil {
-			return err
+			return fmt.Errorf("%v:%v:%v", ErrUpdateFailed, err, record.Name())
 		}
 		log.Println("add success:", record.Name())
 	}
 
-	if !isUpdate {
-		return nil
-	}
-
-	return f.update()
+	return nil
 }
 
 func (f *EncodeFactory) Start(title string) error {
@@ -247,13 +243,17 @@ func (f *EncodeFactory) Start(title string) error {
 		return fmt.Errorf("%v:'%v'", err, title)
 	}
 	if i != Added {
-		return fmt.Errorf("wrong status:%v", i)
+		return fmt.Errorf("%v:%v", ErrStatusFailed, i)
 	}
 
 	if err := f.Status.Set(title, Started); err != nil {
-		return err
+		return fmt.Errorf("%v:%v:%v", ErrSetFailed, err, title)
 	}
-	return f.update()
+
+	if err := f.update(); err != nil {
+		return fmt.Errorf("%v:%v:%v", ErrUpdateFailed, err, title)
+	}
+	return nil
 }
 
 func (f *EncodeFactory) Finish(title string) error {
@@ -263,14 +263,18 @@ func (f *EncodeFactory) Finish(title string) error {
 
 	status, err := f.Status.GetStatus(title)
 	if err != nil {
-		return fmt.Errorf("%v:'%v'", err, title)
+		return fmt.Errorf("%v:%v:'%v'", ErrGetStatusFailed, err, title)
 	}
 	if status != Started {
-		return fmt.Errorf("wrong status:%v", status)
+		return fmt.Errorf("%v:%v", ErrStatusFailed, status)
 	}
 
 	if err := f.Status.Set(title, Finish); err != nil {
-		return err
+		return fmt.Errorf("%v:%v:%v", ErrSetFailed, err, title)
 	}
-	return f.update()
+
+	if err := f.update(); err != nil {
+		return fmt.Errorf("%v:%v:%v", ErrUpdateFailed, err, title)
+	}
+	return nil
 }

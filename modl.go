@@ -1,10 +1,12 @@
 package autoEncode
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/jszwec/csvutil"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -28,13 +30,17 @@ func NewEncodeStatuses() EncodeStatuses {
 }
 
 func (f *EncodeStatuses) ReadAll(r io.Reader) (err error) {
-	bytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
-	}
+	decoder := japanese.ShiftJIS.NewDecoder()
+	dec, err := csvutil.NewDecoder(csv.NewReader(decoder.Reader(r)))
 
-	if err := csvutil.Unmarshal(bytes, f); err != nil {
-		return err
+	for {
+		record := EncodeState{}
+		if err := dec.Decode(&record); err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+		*f = append(*f, record)
 	}
 	return nil
 }
@@ -57,7 +63,12 @@ func (f *EncodeStatuses) WriteAll(w io.Writer) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return w.Write(bytes)
+
+	result, _, err := transform.Bytes(japanese.ShiftJIS.NewEncoder(), bytes)
+	if err != nil {
+		return 0, err
+	}
+	return w.Write(result)
 }
 
 func (f *EncodeStatuses) WriteFile(path string) (err error) {
